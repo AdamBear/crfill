@@ -20,7 +20,7 @@ opt = TestOptions().parse()
 model = models.create_model(opt)
 model.eval()
 
-max_size = 256
+max_size = 1024
 max_num_examples = 200
 UPLOAD_FOLDER = 'static/images'
 app = Flask(__name__)
@@ -37,41 +37,48 @@ with open(filelist, "r") as f:
 list_examples = [n.strip("\n") for n in list_examples]
 
 def process_image(img, mask, name, opt, save_to_input=True):
-    img =img.convert("RGB")
-    img_raw = np.array(img)
+    img = img.convert("RGB")
+
     w_raw, h_raw = img.size
-    h_t, w_t = h_raw//8*8, w_raw//8*8
 
+    h_t, w_t = h_raw // 8 * 8, w_raw // 8 * 8
     img = img.resize((w_t, h_t))
-    img = np.array(img).transpose((2,0,1))
+    img_raw = np.array(img)
 
-    mask_raw = np.array(mask)[...,None]>0
+    img = np.array(img).transpose((2, 0, 1))
+
     mask = mask.resize((w_t, h_t))
+    mask_raw = np.array(mask)[..., None] > 0
 
     mask = np.array(mask)
-    mask = (torch.Tensor(mask)>0).float()
+    mask = (torch.Tensor(mask) > 0).float()
     img = (torch.Tensor(img)).float()
-    img = (img/255-0.5)/0.5
+    img = (img / 255 - 0.5) / 0.5
     img = img[None]
-    mask = mask[None,None]
+    mask = mask[None, None]
 
     with torch.no_grad():
-        generated,_ = model(
-                {'image':img,'mask':mask},
-                mode='inference')
+        generated, _ = model(
+            {'image': img, 'mask': mask},
+            mode='inference')
     generated = torch.clamp(generated, -1, 1)
-    generated = (generated+1)/2*255
+    generated = (generated + 1) / 2 * 255
     generated = generated.cpu().numpy().astype(np.uint8)
-    generated = generated[0].transpose((1,2,0))
-    result = generated*mask_raw+img_raw*(1-mask_raw)
+    generated = generated[0].transpose((1, 2, 0))
+    result = generated * mask_raw + img_raw * (1 - mask_raw)
+    # result = generated*mask+img*(1-mask)
+
     result = result.astype(np.uint8)
 
     result = Image.fromarray(result).resize((w_raw, h_raw))
     result = np.array(result)
     result = Image.fromarray(result.astype(np.uint8))
+
     result.save(f"static/results/{name}")
     if save_to_input:
         result.save(f"static/images/{name}")
+    return result
+
 
 @app.route('/', methods=['GET', 'POST'])
 def hello(name=None):

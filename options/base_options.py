@@ -97,7 +97,7 @@ class BaseOptions():
         if opt.load_from_opt_file:
             parser = self.update_options_from_file(parser, opt)
 
-        opt = parser.parse_args()
+        opt, unknown = parser.parse_known_args()
         self.parser = parser
         return opt
 
