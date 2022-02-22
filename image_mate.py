@@ -30,7 +30,21 @@ def remove_background(image, matte):
     return Image.fromarray(np.uint8(foreground))
 
 
-def process_image_mate(im):
+def get_model():
+    # create MODNet and load the pre-trained ckpt
+    modnet = MODNet(backbone_pretrained=False)
+    modnet = nn.DataParallel(modnet)
+    if torch.cuda.is_available():
+        modnet = modnet.cuda()
+        weights = torch.load(ckpt_path)
+    else:
+        weights = torch.load(ckpt_path, map_location=torch.device('cpu'))
+    modnet.load_state_dict(weights)
+    modnet.eval()
+    return modnet
+
+
+def process_image_mate(modnet, im):
     # define hyper-parameters
     #ref_size = 512
     im_org = im.copy()
@@ -45,16 +59,6 @@ def process_image_mate(im):
         ]
     )
 
-    # create MODNet and load the pre-trained ckpt
-    modnet = MODNet(backbone_pretrained=False)
-    modnet = nn.DataParallel(modnet)
-    if torch.cuda.is_available():
-        modnet = modnet.cuda()
-        weights = torch.load(ckpt_path)
-    else:
-        weights = torch.load(ckpt_path, map_location=torch.device('cpu'))
-    modnet.load_state_dict(weights)
-    modnet.eval()
 
     # unify image channels to 3
     im = np.asarray(im)

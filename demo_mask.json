@@ -384,6 +384,251 @@
 }
   },
   {
+    "filename": "examples/demo/fill_test1.jpg",
+    "json_data": {
+  "version": "4.4.0",
+  "objects": [
+    {
+      "type": "path",
+      "version": "4.4.0",
+      "originX": "center",
+      "originY": "center",
+      "left": 127,
+      "top": 155,
+      "width": 170,
+      "height": 48,
+      "fill": "rgba(255, 165, 0, 0.3)",
+      "stroke": "#000",
+      "strokeWidth": 3,
+      "strokeDashArray": null,
+      "strokeLineCap": "butt",
+      "strokeDashOffset": 0,
+      "strokeLineJoin": "miter",
+      "strokeUniform": false,
+      "strokeMiterLimit": 4,
+      "scaleX": 1,
+      "scaleY": 1,
+      "angle": 0,
+      "flipX": false,
+      "flipY": false,
+      "opacity": 1,
+      "shadow": null,
+      "visible": true,
+      "backgroundColor": "",
+      "fillRule": "nonzero",
+      "paintFirst": "fill",
+      "globalCompositeOperation": "source-over",
+      "skewX": 0,
+      "skewY": 0,
+      "path": [
+        [
+          "M",
+          44.999996185303054,
+          130.99998889499335
+        ],
+        [
+          "L",
+          41.99999643961618,
+          178.99998482598326
+        ],
+        [
+          "L",
+          211.99998202853885,
+          176.99998499552535
+        ],
+        [
+          "L",
+          205.9999825371651,
+          140.9999880472829
+        ],
+        [
+          "z"
+        ]
+      ]
+    },
+    {
+      "type": "path",
+      "version": "4.4.0",
+      "originX": "center",
+      "originY": "center",
+      "left": 604.5,
+      "top": 142,
+      "width": 197,
+      "height": 62,
+      "fill": "rgba(255, 165, 0, 0.3)",
+      "stroke": "#000",
+      "strokeWidth": 3,
+      "strokeDashArray": null,
+      "strokeLineCap": "butt",
+      "strokeDashOffset": 0,
+      "strokeLineJoin": "miter",
+      "strokeUniform": false,
+      "strokeMiterLimit": 4,
+      "scaleX": 1,
+      "scaleY": 1,
+      "angle": 0,
+      "flipX": false,
+      "flipY": false,
+      "opacity": 1,
+      "shadow": null,
+      "visible": true,
+      "backgroundColor": "",
+      "fillRule": "nonzero",
+      "paintFirst": "fill",
+      "globalCompositeOperation": "source-over",
+      "skewX": 0,
+      "skewY": 0,
+      "path": [
+        [
+          "M",
+          505.99995710585216,
+          113.99999033610108
+        ],
+        [
+          "L",
+          505.99995710585216,
+          172.99998533460953
+        ],
+        [
+          "L",
+          702.9999404059566,
+          166.99998584323578
+        ],
+        [
+          "L",
+          698.9999407450408,
+          119.99998982747482
+        ],
+        [
+          "L",
+          694.999941084125,
+          110.9999905904142
+        ],
+        [
+          "z"
+        ]
+      ]
+    },
+    {
+      "type": "path",
+      "version": "4.4.0",
+      "originX": "center",
+      "originY": "center",
+      "left": 621,
+      "top": 525.5,
+      "width": 172,
+      "height": 95,
+      "fill": "rgba(255, 165, 0, 0.3)",
+      "stroke": "#000",
+      "strokeWidth": 3,
+      "strokeDashArray": null,
+      "strokeLineCap": "butt",
+      "strokeDashOffset": 0,
+      "strokeLineJoin": "miter",
+      "strokeUniform": false,
+      "strokeMiterLimit": 4,
+      "scaleX": 1,
+      "scaleY": 1,
+      "angle": 0,
+      "flipX": false,
+      "flipY": false,
+      "opacity": 1,
+      "shadow": null,
+      "visible": true,
+      "backgroundColor": "",
+      "fillRule": "nonzero",
+      "paintFirst": "fill",
+      "globalCompositeOperation": "source-over",
+      "skewX": 0,
+      "skewY": 0,
+      "path": [
+        [
+          "M",
+          534.9999546474919,
+          479.9999593098993
+        ],
+        [
+          "L",
+          535.9999545627209,
+          570.9999515957344
+        ],
+        [
+          "L",
+          694.999941084125,
+          572.9999514261923
+        ],
+        [
+          "L",
+          706.9999400668725,
+          477.9999594794414
+        ],
+        [
+          "z"
+        ]
+      ]
+    },
+    {
+      "type": "path",
+      "version": "4.4.0",
+      "originX": "center",
+      "originY": "center",
+      "left": 370.5,
+      "top": 608,
+      "width": 599,
+      "height": 48,
+      "fill": "rgba(255, 165, 0, 0.3)",
+      "stroke": "#000",
+      "strokeWidth": 3,
+      "strokeDashArray": null,
+      "strokeLineCap": "butt",
+      "strokeDashOffset": 0,
+      "strokeLineJoin": "miter",
+      "strokeUniform": false,
+      "strokeMiterLimit": 4,
+      "scaleX": 1,
+      "scaleY": 1,
+      "angle": 0,
+      "flipX": false,
+      "flipY": false,
+      "opacity": 1,
+      "shadow": null,
+      "visible": true,
+      "backgroundColor": "",
+      "fillRule": "nonzero",
+      "paintFirst": "fill",
+      "globalCompositeOperation": "source-over",
+      "skewX": 0,
+      "skewY": 0,
+      "path": [
+        [
+          "M",
+          70.99999398125594,
+          583.9999504937108
+        ],
+        [
+          "L",
+          72.99999381171385,
+          631.9999464247007
+        ],
+        [
+          "L",
+          669.999943203401,
+          629.9999465942428
+        ],
+        [
+          "L",
+          665.9999435424852,
+          584.9999504089398
+        ],
+        [
+          "z"
+        ]
+      ]
+    }
+  ]
+}
+  },
+  {
     "filename": "examples/demo/demo2.jpg",
     "json_data": {
   "version": "4.4.0",
