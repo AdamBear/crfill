@@ -86,6 +86,7 @@ def get_ref(frame_ref, transform, vggnet):
 
 def image_colorize(IB_lab, I_last_lab_predict, I_reference_lab, colornet, features_B, frame1, lambda_value,
                    nonlocal_net, opt, sigma_color, transform, vggnet, wls_filter_on):
+
     IA_lab_large = transform(frame1).unsqueeze(0).cuda()
     IA_lab = torch.nn.functional.interpolate(IA_lab_large, scale_factor=0.5, mode="bilinear")
     IA_l = IA_lab[:, 0:1, :, :]
@@ -130,6 +131,74 @@ def image_colorize(IB_lab, I_last_lab_predict, I_reference_lab, colornet, featur
     else:
         IA_predict_rgb = batch_lab2rgb_transpose_mc(curr_bs_l[:32], curr_predict[:32, ...])
     return IA_predict_rgb
+
+
+def get_model():
+    import sys
+    sys.path.insert(0, "d:\\apps\\nlp\\prompt\\Deep-Exemplar-based-Video-Colorization")
+
+    os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+    os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+    torch.cuda.set_device(0)
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--frame_propagate", default=False, type=bool, help="propagation mode, , please check the paper"
+    )
+    parser.add_argument("--image_size", type=int, default=[216 * 2, 384 * 2], help="the image size, eg. [216,384]")
+    parser.add_argument("--cuda", action="store_false")
+    parser.add_argument("--gpu_ids", type=str, default="0", help="separate by comma")
+    #parser.add_argument("--clip_path", type=str, default="./sample_videos/clips/v32", help="path of input clips")
+    #parser.add_argument("--ref_path", type=str, default="./sample_videos/ref/v04", help="path of refernce images")
+    #parser.add_argument("--output_path", type=str, default="./sample_videos/output", help="path of output clips")
+    opt, _ = parser.parse_known_args()
+
+    opt.gpu_ids = [int(x) for x in opt.gpu_ids.split(",")]
+    cudnn.benchmark = True
+    print("running on GPU", opt.gpu_ids)
+
+    # clip_name = opt.clip_path.split("/")[-1]
+    # refs = os.listdir(opt.ref_path)
+    # refs.sort()
+
+    nonlocal_net = WarpNet(1)
+    colornet = ColorVidNet(7)
+    vggnet = VGG19_pytorch()
+    vggnet.load_state_dict(torch.load("data/vgg19_conv.pth"))
+    for param in vggnet.parameters():
+        param.requires_grad = False
+
+    nonlocal_test_path = os.path.join("checkpoints/", "video_moredata_l1/nonlocal_net_iter_76000.pth")
+    color_test_path = os.path.join("checkpoints/", "video_moredata_l1/colornet_iter_76000.pth")
+    print("succesfully load nonlocal model: ", nonlocal_test_path)
+    print("succesfully load color model: ", color_test_path)
+    nonlocal_net.load_state_dict(torch.load(nonlocal_test_path))
+    colornet.load_state_dict(torch.load(color_test_path))
+
+    nonlocal_net.eval()
+    colornet.eval()
+    vggnet.eval()
+    nonlocal_net.cuda()
+    colornet.cuda()
+    vggnet.cuda()
+
+    return (opt, nonlocal_net, colornet, vggnet)
+
+
+def process_image_colorization(models, frame1, frame_ref):
+    wls_filter_on = True
+    lambda_value = 500
+    sigma_color = 4
+
+    opt, nonlocal_net, colornet, vggnet = models
+    transform_t = transforms.Compose(
+        [CenterPad(frame1.size), transform_lib.CenterCrop(frame1.size), RGB2Lab(), ToTensor(), Normalize()]
+    )
+
+    IB_lab, I_last_lab_predict, I_reference_lab, features_B = get_ref(frame_ref, transform_t, vggnet)
+    IA_predict_rgb = image_colorize(IB_lab=IB_lab, I_last_lab_predict=I_last_lab_predict, I_reference_lab=I_reference_lab, colornet=colornet, features_B=features_B, frame1=frame1,
+                                        lambda_value=lambda_value, nonlocal_net=nonlocal_net, opt=opt, sigma_color=sigma_color, transform=transform_t, vggnet=vggnet, wls_filter_on=wls_filter_on)
+    return Image.fromarray(IA_predict_rgb.astype(np.uint8))
 
 
 if __name__ == "__main__":
