@@ -7,7 +7,7 @@ from PIL import Image
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-def get_model2(model_name="BSRGAN"):
+def get_model2(model_name="BSRGANx2"):
     from network_rrdbnet import RRDBNet as net
     model_folder = "d:\\apps\\nlp\\prompt\\BSRGAN\\model_zoo\\"
 
@@ -83,6 +83,8 @@ def process_image_enhance(model, img):
     # hsize = int((float(img.size[1])*float(wpercent)))
     # img = img.resize((basewidth,hsize), Image.ANTIALIAS)
 
+    torch.cuda.empty_cache()
+
     window_size = 8
     scale = 4
     img_lq = pil_to_cv2(img)
@@ -111,6 +113,8 @@ def process_image_enhance(model, img):
 
 
 def process_image_enhance2(model, img):
+    torch.cuda.empty_cache()
+
     #img_L = util.imread_uint(img, n_channels=3)
     img_L = pil_to_cv2(img)
     img_L = util.uint2tensor4(img_L)

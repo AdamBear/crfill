@@ -16,5 +16,8 @@
   },
   {
     "filename": "examples/demo/inpaint_2.jpg"
+  },
+  {
+    "filename": "examples/demo/old_photo.jpg"
   }
 ]

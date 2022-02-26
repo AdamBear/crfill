@@ -186,7 +186,7 @@ def get_model():
 
 
 def process_image_colorization(models, frame1, frame_ref):
-    wls_filter_on = True
+    wls_filter_on = False
     lambda_value = 500
     sigma_color = 4
 
