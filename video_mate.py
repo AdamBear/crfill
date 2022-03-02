@@ -11,7 +11,35 @@ import torchvision.transforms as transforms
 
 from src.models.modnet import MODNet
 import cv2
-from tqdm import tqdm
+#from tqdm import tqdm
+
+import streamlit as st
+import time
+
+
+
+
+
+class tqdm:
+    def __init__(self, iterable, st_progress_bar):
+        self.prog_bar = st_progress_bar.progress(0)
+        self.iterable = iterable
+        self.length = len(iterable)
+        self.i = 0
+
+    def __iter__(self):
+        for obj in self.iterable:
+            yield obj
+            self.i += 1
+            current_prog = self.i / self.length
+            self.prog_bar.progress(current_prog)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self ,type, value, traceback):
+        return False
+
 
 
 ckpt_path = "d:\\apps\\nlp\\prompt\\modnet_docker\\pretrained\\modnet_webcam_portrait_matting.ckpt"
@@ -54,7 +82,7 @@ def get_model():
     return modnet
 
 
-def process_video_mate(modnet, video_path, result, fps=30, alpha_matte = False):
+def process_video_mate(modnet, video_path, result, fps=30, alpha_matte = False, st_progress_bar=None):
     vc = cv2.VideoCapture(video_path)
 
     if vc.isOpened():
@@ -78,12 +106,19 @@ def process_video_mate(modnet, video_path, result, fps=30, alpha_matte = False):
     rw = rw - rw % 32
 
     # video writer
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    #fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    fourcc = cv2.VideoWriter_fourcc('X', '2', '6', '4')
+
     video_writer = cv2.VideoWriter(result, fourcc, fps, (w, h))
 
     print('Start matting...')
-    with tqdm(range(int(num_frame)))as t:
+    i = 0
+    with tqdm(range(int(num_frame)), st_progress_bar=st_progress_bar) as t:
         for c in t:
+            i += 1
+            if i > 150:
+                break
+
             frame_np = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             frame_np = cv2.resize(frame_np, (rw, rh), cv2.INTER_AREA)
 
@@ -111,5 +146,7 @@ def process_video_mate(modnet, video_path, result, fps=30, alpha_matte = False):
 
     video_writer.release()
     print('Save the result video to {0}'.format(result))
+
+    st_progress_bar.empty()
 
 
