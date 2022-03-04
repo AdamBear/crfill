@@ -20,27 +20,6 @@ import time
 
 
 
-class tqdm:
-    def __init__(self, iterable, st_progress_bar):
-        self.prog_bar = st_progress_bar.progress(0)
-        self.iterable = iterable
-        self.length = len(iterable)
-        self.i = 0
-
-    def __iter__(self):
-        for obj in self.iterable:
-            yield obj
-            self.i += 1
-            current_prog = self.i / self.length
-            self.prog_bar.progress(current_prog)
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self ,type, value, traceback):
-        return False
-
-
 
 ckpt_path = "d:\\apps\\nlp\\prompt\\modnet_docker\\pretrained\\modnet_webcam_portrait_matting.ckpt"
 
@@ -82,7 +61,7 @@ def get_model():
     return modnet
 
 
-def process_video_mate(modnet, video_path, result, fps=30, alpha_matte = False, st_progress_bar=None):
+def process_video_mate(modnet, video_path, result, fps=30, alpha_matte = False, tqdm=None, st_progress_bar=None):
     vc = cv2.VideoCapture(video_path)
 
     if vc.isOpened():

@@ -7,7 +7,7 @@ from PIL import Image
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-def get_model2(model_name="BSRGANx2"):
+def get_model2(model_name="BSRGAN"):
     from network_rrdbnet import RRDBNet as net
     model_folder = "d:\\apps\\nlp\\prompt\\BSRGAN\\model_zoo\\"
 

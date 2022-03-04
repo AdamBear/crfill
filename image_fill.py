@@ -69,6 +69,10 @@ def get_model():
     return model
 
 
+def process_image_cv(model, img, mask):
+    pass
+
+
 def process_image(model, img, mask):
     img = img.convert("RGB")
 
@@ -99,12 +103,8 @@ def process_image(model, img, mask):
     generated = generated.cpu().numpy().astype(np.uint8)
     generated = generated[0].transpose((1, 2, 0))
     result = generated * mask_raw + img_raw * (1 - mask_raw)
-    # result = generated*mask+img*(1-mask)
 
     result = result.astype(np.uint8)
-
     result = Image.fromarray(result).resize((w_raw, h_raw))
-    result = np.array(result)
-    result = Image.fromarray(result.astype(np.uint8))
 
     return result

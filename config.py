@@ -1,0 +1,59 @@
+# -*- coding: utf-8 -*-
+TEMP_OUTPUT_DIR = "E:/Temp_Output"
+
+from enum import Enum
+
+
+class SubtitleArea(Enum):
+    LOWER_PART = 0
+    UPPER_PART = 1
+    UNKNOWN = 2
+    CUSTOM = 3
+
+
+class BackgroundColor(Enum):
+    # ��Ļ����
+    WHITE = 0
+    DARK = 1
+    UNKNOWN = 2
+
+
+USE_GPU = False
+
+
+BG_MOD = BackgroundColor.DARK
+BG_VALUE_DARK = 200
+BG_VALUE_OTHER = 63
+ROI_RATE = 0.4
+
+
+SUBTITLE_AREA = SubtitleArea.LOWER_PART
+
+
+COSINE_SIMILARITY_THRESHOLD = 0.95 if SUBTITLE_AREA == SubtitleArea.UNKNOWN else 0.9
+
+FRAME_COMPARE_TIMES = 10
+
+
+EXTRACT_FREQUENCY = 3
+EXTRACT_INTERVAL = 8
+
+
+EUCLIDEAN_SIMILARITY_THRESHOLD = 0.9
+
+
+PIXEL_TOLERANCE_Y = 50
+PIXEL_TOLERANCE_X = 100
+
+
+SUBTITLE_AREA_DEVIATION_PIXEL = 50
+
+
+WATERMARK_AREA_NUM = 5
+
+
+THRESHOLD_TEXT_SIMILARITY = 0.8
+
+
+DROP_SCORE = 0.8
+
