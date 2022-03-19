@@ -7,7 +7,7 @@ from PIL import Image
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-def get_model2(model_name="BSRGAN"):
+def get_model2(model_name="BSRGANx2"):
     from network_rrdbnet import RRDBNet as net
     model_folder = "d:\\apps\\nlp\\prompt\\BSRGAN\\model_zoo\\"
 
@@ -77,7 +77,33 @@ def cv2_to_pil(img):
     return Image.fromarray(img.astype(np.uint8))
 
 
-def process_image_enhance(model, img):
+def process_by_tile(model, img_lq, scale, tile, tile_overlap):
+    b, c, h, w = img_lq.size()
+    tile = min(tile, h, w)
+
+    sf = scale
+
+    stride = tile - tile_overlap
+    h_idx_list = list(range(0, h - tile, stride)) + [h - tile]
+    w_idx_list = list(range(0, w - tile, stride)) + [w - tile]
+    E = torch.zeros(b, c, h * sf, w * sf).type_as(img_lq)
+    W = torch.zeros_like(E)
+
+    for h_idx in h_idx_list:
+        for w_idx in w_idx_list:
+            in_patch = img_lq[..., h_idx:h_idx + tile, w_idx:w_idx + tile]
+            out_patch = model(in_patch)
+            out_patch_mask = torch.ones_like(out_patch)
+
+            E[..., h_idx * sf:(h_idx + tile) * sf, w_idx * sf:(w_idx + tile) * sf].add_(out_patch)
+            W[..., h_idx * sf:(h_idx + tile) * sf, w_idx * sf:(w_idx + tile) * sf].add_(out_patch_mask)
+    output = E.div_(W)
+    return output
+
+
+def process_image_enhance(model, img, tile=720, tile_overlap=32):
+    # test the image tile by tile
+
     # basewidth = 256
     # wpercent = (basewidth/float(img.size[0]))
     # hsize = int((float(img.size[1])*float(wpercent)))
@@ -87,6 +113,7 @@ def process_image_enhance(model, img):
 
     window_size = 8
     scale = 4
+
     img_lq = pil_to_cv2(img)
     img_lq = img_lq.astype(np.float32) / 255.
 
@@ -101,7 +128,7 @@ def process_image_enhance(model, img):
         w_pad = (w_old // window_size + 1) * window_size - w_old
         img_lq = torch.cat([img_lq, torch.flip(img_lq, [2])], 2)[:, :, :h_old + h_pad, :]
         img_lq = torch.cat([img_lq, torch.flip(img_lq, [3])], 3)[:, :, :, :w_old + w_pad]
-        output = model(img_lq)
+        output = process_by_tile(model, img_lq, scale, tile, tile_overlap)
         output = output[..., :h_old * scale, :w_old * scale]
 
     # save image

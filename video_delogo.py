@@ -356,14 +356,17 @@ class AutoSubtitleExtractor():
         a_maskimg = np.zeros((h, w), dtype=np.uint8)
 
         # 两张全部加入到mask中
-        pre_content = frame_contents[pre_k]
-        next_content = frame_contents[found_k]
-        a_maskimg = self._make_content_mask(a_maskimg, pre_content, w, h, remove_text, remove_watermark,
-                                            found_k == pre_k)
-        a_maskimg = self._make_content_mask(a_maskimg, next_content, w, h, remove_text, remove_watermark,
-                                            found_k == pre_k)
+        if pre_k in frame_contents:
+            pre_content = frame_contents[pre_k]
+            a_maskimg = self._make_content_mask(a_maskimg, pre_content, w, h, remove_text, remove_watermark,
+                                                found_k == pre_k)
 
-        self.mask_cache[pre_k] = a_maskimg
+            if found_k in frame_contents:
+                next_content = frame_contents[found_k]
+                a_maskimg = self._make_content_mask(a_maskimg, next_content, w, h, remove_text, remove_watermark,
+                                                found_k == pre_k)
+
+            self.mask_cache[pre_k] = a_maskimg
 
         return a_maskimg
 
@@ -384,7 +387,7 @@ class AutoSubtitleExtractor():
 
         output_file = ".".join(output_file.split(".")[:-1]) + "_wa.mp4"
 
-        writer = cv2.VideoWriter(output_file, cv2.VideoWriter_fourcc(*"x264"), 30, (self.w, self.h))
+        writer = cv2.VideoWriter(output_file, cv2.VideoWriter_fourcc(*"x264"), self.fps, (self.w, self.h))
 
         video_cap = cv2.VideoCapture(self.video_path)
         frame_no = 0
@@ -859,4 +862,5 @@ def process_delogo(model, video_path, remove_text=True, remove_watermark=True, t
     se = AutoSubtitleExtractor(video_path, True, start_ms=0, end_ms=10000, model=model, generate=False)
     se.detect_scene = False
     se.run()
-    return se.remove_text_watermark(tqdm=tqdm, st_progress_bar=st_progress_bar, remove_text=False)
+    return se.remove_text_watermark(tqdm=tqdm, st_progress_bar=st_progress_bar, remove_text=remove_text,
+                                    remove_watermark=remove_watermark)

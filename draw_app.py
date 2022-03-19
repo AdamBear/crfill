@@ -5,8 +5,9 @@ from streamlit_drawable_canvas import st_canvas
 import jsons
 from image_mate import process_image_mate
 from image_fill import process_image
-from image_enhance import process_image_enhance2
+from image_enhance import process_image_enhance2, process_image_enhance
 from video_mate import process_video_mate
+from video_delogo import process_delogo
 from image_colorization import process_image_colorization
 from streamlit_option_menu import option_menu
 from streamlit_image_comparison import image_comparison
@@ -33,6 +34,11 @@ class tqdm:
     def __exit__(self ,type, value, traceback):
         return False
 
+    def update(self):
+        self.i += 1
+        current_prog = self.i / self.length
+        self.prog_bar.progress(current_prog)
+
 
 # 所有的demo都需要转换成接口，其中的resize方法原来改进，最终需要出原图比例
 st.set_page_config(
@@ -58,13 +64,15 @@ with st.sidebar:
     #         person_demo = True
 
     if not demo_s or demo_s == "基础AI":
-        selected = option_menu("基础AI", ["图片修复", '智能抠图', '图片超分', '图片调色', '---',
+        selected = option_menu("基础AI", ["图片修复", '智能抠图', '图片超分',
+                                        '视频调色', '---',
                                         '两图转视频',
                                         '视频补帧',
                                         '视频抠图',
                                         # '视频超分',
                                         '---', '字幕水印去除'],
-            icons=['bandaid', 'heart', 'house', 'palette', '',
+            icons=['bandaid', 'heart', 'house',
+                   'palette', '',
                    'images',
                    'collection-play-fill',
                    'person-video2',
@@ -73,8 +81,8 @@ with st.sidebar:
                   menu_icon="cast", default_index=0)
 
     elif demo_s == "音频语音":
-        selected = option_menu("音频语音", ['语音克隆', '---', '视频自动配乐', '人声音乐分离'],
-                               icons=['soundwave', '', 'music-note-beamed', 'play-btn-fill'],
+        selected = option_menu("音频语音", ['英文一句话语音克隆', '中文语音克隆', '---', '视频自动配乐', '人声音乐分离'],
+                               icons=['soundwave', 'soundwave', '', 'music-note-beamed', 'play-btn-fill'],
                                menu_icon="cast", default_index=0)
 
     elif demo_s == "虚拟主播":
@@ -118,7 +126,7 @@ def get_video_mate_model():
 @st.cache(show_spinner=False, allow_output_mutation=True)
 def get_enhance_model():
     from image_enhance import get_model, get_model2
-    return get_model2()
+    return get_model()
 
 
 @st.cache(show_spinner=False, allow_output_mutation=True)
@@ -166,6 +174,13 @@ def get_movie_IF_demos():
 def get_movie_mate_demos():
     with open("demo_video_mate.json", "r") as f:
         return jsons.loads(f.read())
+
+
+@st.cache(show_spinner=False, allow_output_mutation=True)
+def get_video_delogo_demos():
+    with open("demo_video_delogo.json", "r") as f:
+        return jsons.loads(f.read())
+
 
 max_size = 720
 
@@ -225,6 +240,7 @@ colorize_demos = get_colorize_demos()
 motion_demos = get_motion_demos()
 if_demos = get_movie_IF_demos()
 video_mate_demos = get_movie_mate_demos()
+video_delogo_demos = get_video_delogo_demos()
 
 
 def clear_fill_session():
@@ -395,29 +411,34 @@ def test_enhance(max_size=256):
             if bg_image:
                 nm = Image.open(bg_image)
                 max_size = max(nm.size[0], nm.size[1])
-                if max_size > 760:
-                    max_size = int(max_size * (760 / max_size))
-                #if max_size > 720:
+                # if max_size > 1500:
+                #     max_size = int(max_size * (1500 / max_size))
+                # if max_size > 720:
                 #    max_size = int(max_size / 2)
                 image_bg = resize_image(nm, max_size)
 
     if not image_bg:
         bg_image = enhance_demos[demos_images[demo_image]]["filename"]
-        image_bg = resize_image(Image.open(bg_image), max_size)
+        nm = Image.open(bg_image)
+        image_bg = resize_image(nm, max_size)
 
     st.text("点击'AI超清'会尝试智能补充图片细节并提升图片分辨率。")
     if st.button("AI超清"):
         with st.spinner("AI正在处理中..."):
             new_image = resize_image(image_bg, max_size)
 
-            result = process_image_enhance2(get_enhance_model(), new_image)
+            result = process_image_enhance(get_enhance_model(), new_image)
 
             if not result:
                 return {"success": False, "msg": "server is too busy!"}
 
+            result.save("d:/big_result.jpg")
+
             result = resize_image(result, max_size)
 
             enhanced_image = restore_image(result, image_bg, max_size)
+            enhanced_image_restored = restore_image(result, nm, max_size)
+            enhanced_image_restored.save("d:/result.jpg")
 
         st.balloons()
         image_comparison(
@@ -645,8 +666,8 @@ def test_video_mate():
 def test_delogo():
 
     demos_images = {
-        "带台标字幕视频": 0,
-        "带水印字幕视频": 1
+        "测试字幕视频": 0,
+        #"带水印字幕视频": 1
     }
 
     need_process = False
@@ -672,12 +693,12 @@ def test_delogo():
                 org_video_path = tfile.name
 
     if not org_video_path:
-        org_video_path = video_mate_demos[demos_images[demo_if]]["filename"]
+        org_video_path = video_delogo_demos[demos_images[demo_if]]["filename"]
 
     cols = st.columns(5)
-    with cols[2]:
+    with cols[0]:
         remove_text = st.checkbox("去字幕", value=True)
-    with cols[4]:
+    with cols[1]:
         remove_watermark = st.checkbox("去水印和台标", value=True)
 
     if st.button("AI去水印字幕"):
@@ -700,7 +721,7 @@ def test_delogo():
             #output_path
             with st.spinner("视频加工中，为绿色环保演示仅处理视频前10秒，请确保视频前10秒有字幕或台标"):
                 st_progress_bar = st.empty()
-                process_video_mate(get_video_mate_model(), org_video_path, output_path, st_progress_bar=st_progress_bar)
+                output_path = process_delogo(get_fill_model(), org_video_path, output_path, tqdm=tqdm, st_progress_bar=st_progress_bar)
                 st_progress_bar.empty()
                 st.balloons()
 
@@ -709,7 +730,7 @@ def test_delogo():
             st.video(org_video_path)
 
         with cols[1]:
-            st.text("超分后视频")
+            st.text("去除水印字幕视频")
             st.video(output_path)
 
 
