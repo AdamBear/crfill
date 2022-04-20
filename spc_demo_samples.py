@@ -43,7 +43,7 @@ st.set_page_config(
  )
 
 st.header("用户动态主题的可控文本生成原型系统")
-st.subheader("主题素材管理")
+st.subheader("主题素材管理功能")
 
 # cols = st.columns(5)
 # with cols[0]:
