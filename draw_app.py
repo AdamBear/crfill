@@ -1,14 +1,10 @@
 import pandas as pd
 from PIL import Image
+import cv2
 import streamlit as st
 from streamlit_drawable_canvas import st_canvas
 import jsons
-from image_mate import process_image_mate
-from image_fill import process_image
-from image_enhance import process_image_enhance2, process_image_enhance
-from video_mate import process_video_mate
-from video_delogo import process_delogo
-from image_colorization import process_image_colorization
+
 from streamlit_option_menu import option_menu
 from streamlit_image_comparison import image_comparison
 import numpy as np
@@ -57,7 +53,8 @@ base_demo, person_demo = False, False
 
 # # 1. as sidebar menu
 with st.sidebar:
-    demo_s = st.radio("请选择演示功能分类", ("基础AI", "音频语音", "虚拟主播"))
+    # demo_s = st.radio("请选择演示功能分类", ("基础AI", "音频语音", "虚拟主播"))
+    demo_s = st.radio("请选择演示功能分类", ("虚拟主播", "基础AI"))
 
     # with cols[1]:
     #     if st.button("秀客AI"):
@@ -86,9 +83,8 @@ with st.sidebar:
                                menu_icon="cast", default_index=0)
 
     elif demo_s == "虚拟主播":
-        selected = option_menu("虚拟主播", ['人脸编辑', '唇型合成', '人脸动作', '视频换脸'],
-                               icons=['person-square',
-                                      'emoji-laughing-fill', 'person-lines-fill', 'person-x-fill'],
+        selected = option_menu("虚拟主播", ['人脸美化', '装容美化', '动作识别', '视频换脸'],
+                               icons=['emoji-laughing-fill', 'person-square', 'person-lines-fill', 'person-x-fill'],
                                menu_icon="cast", default_index=0)
     else:
         selected = ""
@@ -252,6 +248,7 @@ def clear_fill_session():
 
 
 def test_mate():
+    from image_mate import process_image_mate
     global bg_image, image_bg
 
     demos_images = {
@@ -299,6 +296,8 @@ def test_mate():
 
 
 def test_fill():
+    from image_fill import process_image
+
     global bg_image, image_bg
     demos_images = {
         "城市背景": 0,
@@ -389,6 +388,8 @@ def test_fill():
 
 
 def test_enhance(max_size=256):
+    from image_enhance import process_image_enhance2, process_image_enhance
+
     global bg_image, image_bg
 
     demos_images = {
@@ -457,6 +458,8 @@ def test_enhance(max_size=256):
 
 
 def test_image_motion():
+    from image_colorization import process_image_colorization
+
     # 选择原图， 选择颜色参考图，点击智能调色
     images_pairs = {
         "人物动作照片组1": 2,
@@ -518,23 +521,6 @@ def test_image_motion():
             st.video(motion_demos[images_pairs[demo_image]]["out"])
 
 
-        # models = get_colorization_model()
-        #
-        # frame1 = resize_image(start_image, max_size * 2)
-        # result = process_image_colorization(models, frame1, ref_image)
-        #
-        # with cols[0]:
-        #     image_comparison(
-        #         img1=frame1,
-        #         img2=result,
-        #         label1="原图",
-        #         label2="AI调色后",
-        #         width=max_size * 2,
-        #         starting_position=50,
-        #         show_labels=True,
-        #         make_responsive=True,
-        #         in_memory=True,
-        #     )
 
 
 
@@ -600,6 +586,8 @@ def test_video_if():
 
 
 def test_video_mate():
+    from video_mate import process_video_mate
+
     global bg_image, image_bg
 
     demos_images = {
@@ -664,6 +652,7 @@ def test_video_mate():
 
 
 def test_delogo():
+    from video_delogo import process_delogo
 
     demos_images = {
         "测试字幕视频": 0,
@@ -749,6 +738,7 @@ def get_gray(rgb):
 
 
 def test_colorize(max_size=384):
+    from image_colorization import process_image_colorization
     #global need_process
     #demo_source_image_path = None
 
@@ -836,6 +826,62 @@ def test_colorize(max_size=384):
             )
 
 
+# 人脸美化
+def test_beauty():
+    from image_beauty import image_beautify
+    st.text("基于图形学而非AI的人脸美化算法，仅支持正脸")
+
+    global bg_image, image_bg
+
+    demos_images = {
+        "美女1": 6,
+        "美女2": 1,
+        "多人": 5,
+    }
+
+    cols = st.columns(2)
+    demo_image = cols[0].selectbox(
+        "示例图片:", demos_images.keys(), on_change=clear_fill_session
+    )
+
+    cols[1].text("或者")
+    with cols[1]:
+        with st.expander("上传图片"):
+            bg_image = st.file_uploader("上传原始图片", help="请上传待处理的原始图片", type=["png", "jpg"], on_change=clear_fill_session)
+            if bg_image:
+                image_bg = resize_image(Image.open(bg_image), 704)
+
+    if not image_bg:
+        bg_image = mate_demos[demos_images[demo_image]]["filename"]
+        image_bg = resize_image(Image.open(bg_image), 704)
+
+    image_bg_cv2 = cv2.cvtColor(np.asarray(image_bg), cv2.COLOR_RGB2BGR)
+
+    thin = st.slider("瘦脸程度", 0.0, 1.0, 0.8, 0.1)
+    enlarge = st.slider("大眼程度", 0, 100, 30, 1)
+    whiten =  st.slider("麿皮程度", 0, 5, 3, 1)
+
+    #if st.button("美化"):
+    if True:
+        #with st.spinner("正在处理中..."):
+        mated_image = image_beautify([image_bg_cv2], thin, enlarge, whiten)
+        mated_image[0] = Image.fromarray(cv2.cvtColor(mated_image[0], cv2.COLOR_BGR2RGB).astype(np.uint8))
+
+        st.balloons()
+        image_comparison(
+            img1=image_bg,
+            img2=mated_image[0],
+            label1="原图",
+            label2="美化图",
+            width=max_size,
+            starting_position=50,
+            show_labels=True,
+            make_responsive=True,
+            in_memory=True,
+        )
+    else:
+        st.image(image_bg)
+
 
 if selected == "图片修复":
     test_fill()
@@ -859,6 +905,8 @@ elif selected == "字幕水印去除":
     #test_video_SR()
     test_delogo()
     pass
+elif selected == "人脸美化":
+    test_beauty()
 else:
     st.text("正在赶工中...")
 
