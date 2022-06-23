@@ -9,6 +9,15 @@ from streamlit_option_menu import option_menu
 from streamlit_image_comparison import image_comparison
 import numpy as np
 import tempfile
+import streamlit_parameters
+import logging
+
+parameters = streamlit_parameters.parameters.Parameters()
+parameters.register_string_list_parameter(key="action", default_value=["makeup", "beauty"])
+
+parameters.set_url_fields()
+action = parameters.action.value[0]
+logging.info("action:" + action)
 
 class tqdm:
     def __init__(self, iterable, st_progress_bar):
@@ -51,6 +60,12 @@ st.header("慧抖销AI处理功能演示")
 
 base_demo, person_demo = False, False
 
+beauty_index = 0
+if action == "beauty":
+    beauty_index = 0
+elif action == "makeup":
+    beauty_index = 1
+
 # # 1. as sidebar menu
 with st.sidebar:
     # demo_s = st.radio("请选择演示功能分类", ("基础AI", "音频语音", "虚拟主播"))
@@ -85,7 +100,7 @@ with st.sidebar:
     elif demo_s == "虚拟主播":
         selected = option_menu("虚拟主播", ['人脸美化', '装容美化', '动作识别', '视频换脸'],
                                icons=['emoji-laughing-fill', 'person-square', 'person-lines-fill', 'person-x-fill'],
-                               menu_icon="cast", default_index=0)
+                               menu_icon="cast", default_index=beauty_index)
     else:
         selected = ""
         st.text("正在赶工中...")
@@ -109,9 +124,22 @@ def get_fill_model():
 
 
 @st.cache(show_spinner=False, allow_output_mutation=True)
+def get_hub():
+    from image_beauty import get_hub_module
+    return get_hub_module()
+
+
+@st.cache(show_spinner=False, allow_output_mutation=True)
+def get_makeup_model():
+    from image_makeup import get_mk_model
+    return get_mk_model()
+
+
+@st.cache(show_spinner=False, allow_output_mutation=True)
 def get_mate_model():
     from image_mate import get_model
     return get_model()
+
 
 @st.cache(show_spinner=False, allow_output_mutation=True)
 def get_video_mate_model():
@@ -834,6 +862,7 @@ def test_beauty():
     global bg_image, image_bg
 
     demos_images = {
+        "正大脸": 7,
         "美女1": 6,
         "美女2": 1,
         "多人": 5,
@@ -857,32 +886,98 @@ def test_beauty():
 
     image_bg_cv2 = cv2.cvtColor(np.asarray(image_bg), cv2.COLOR_RGB2BGR)
 
-    thin = st.slider("瘦脸程度", 0.0, 1.0, 0.8, 0.1)
-    enlarge = st.slider("大眼程度", 0, 100, 30, 1)
-    whiten =  st.slider("麿皮程度", 0, 5, 3, 1)
+    cols = st.columns(4)
+    thin = cols[0].slider("瘦脸程度", 0, 100, 50, 1)
+    enlarge = cols[1].slider("大眼程度", 0, 100, 50, 1)
+    whiten = cols[2].slider("美白程度", 0, 100, 50, 1)
+    details = cols[3].slider("磨皮程度", 0, 100, 50, 1)
 
     #if st.button("美化"):
     if True:
-        #with st.spinner("正在处理中..."):
-        mated_image = image_beautify([image_bg_cv2], thin, enlarge, whiten)
-        mated_image[0] = Image.fromarray(cv2.cvtColor(mated_image[0], cv2.COLOR_BGR2RGB).astype(np.uint8))
+        with st.spinner("正在处理中..."):
+            mated_image = image_beautify([image_bg_cv2], thin, enlarge, whiten, details, get_hub())
+            mated_image[0] = Image.fromarray(cv2.cvtColor(mated_image[0], cv2.COLOR_BGR2RGB).astype(np.uint8))
 
-        st.balloons()
-        image_comparison(
-            img1=image_bg,
-            img2=mated_image[0],
-            label1="原图",
-            label2="美化图",
-            width=max_size,
-            starting_position=50,
-            show_labels=True,
-            make_responsive=True,
-            in_memory=True,
-        )
+            st.balloons()
+            image_comparison(
+                img1=image_bg,
+                img2=mated_image[0],
+                label1="原图",
+                label2="美化图",
+                width=max_size,
+                starting_position=50,
+                show_labels=True,
+                make_responsive=True,
+                in_memory=True,
+            )
     else:
         st.image(image_bg)
 
 
+def test_makeup():
+    from image_makeup import do_makeup
+    st.text("选择目标人物，即可将其脸部化妆迁移到源人物的脸上")
+
+    global bg_image, image_bg
+
+    demos_images = {
+        "女性4": 8,
+        "女性1": 7,
+        "女性2": 6,
+        "女性3": 1
+    }
+
+    cols = st.columns(2)
+    demo_image = cols[0].selectbox(
+        "示例源人物:", demos_images.keys(), on_change=clear_fill_session
+    )
+
+    cols[1].text("或者")
+    with cols[1]:
+        with st.expander("上传图片"):
+            bg_image = st.file_uploader("上传源人物图片", help="请上传待处理的源人物图片", type=["png", "jpg"], on_change=clear_fill_session)
+            if bg_image:
+                image_bg = resize_image(Image.open(bg_image), 361).convert('RGB')
+
+    if not image_bg:
+        bg_image = mate_demos[demos_images[demo_image]]["filename"]
+        image_bg = resize_image(Image.open(bg_image), 361).convert('RGB')
+
+    st.image("examples/makeup/makeups.png")
+    cols = st.columns(2)
+    with cols[0]:
+        selected_makeup = st.selectbox("目标妆容", [str(i+1) + ".png" for i in range(10)], 5)
+    with cols[1]:
+        degree = st.slider("妆容迁移程度", 0, 100, 99, 1)
+
+    # 结果显示，五列，三图片
+    cols_def = (5, 1, 5, 1, 5, 10)
+    col1, col2, col3, col4, col5, col6 = st.columns(cols_def)
+    with col1:
+        st.text("源人物")
+        st.image(image_bg)
+    with col2:
+        st.header("+")
+    with col3:
+        st.text("目标妆容")
+        image_mr = Image.open("examples/makeup/" + selected_makeup).convert('RGB')
+        st.image(image_mr)
+    with col4:
+        st.header("=")
+
+    if True:
+        with st.spinner("正在处理中..."):
+            model, parsing_net = get_makeup_model()
+            output = do_makeup(image_bg, image_mr, degree / 100, model, parsing_net )
+            with col5:
+                st.text("妆容迁移结果")
+                st.image(output)
+
+# if  action == "beauty":
+#     test_beauty()
+# elif action == "makeup":
+#     test_makeup()
+# else:
 if selected == "图片修复":
     test_fill()
 elif selected == "智能抠图":
@@ -892,21 +987,17 @@ elif selected == "图片超分":
 elif selected == "图片调色":
     test_colorize(384)
 elif selected == "两图转视频":
-    #st.text("正在赶工中...")
     test_image_motion()
 elif selected == "视频补帧":
-    #st.text("正在赶工中...")
     test_video_if()
 elif selected == "视频抠图":
-    #st.text("正在赶工中...")
     test_video_mate()
 elif selected == "字幕水印去除":
-    #st.text("正在最后调试中...")
-    #test_video_SR()
     test_delogo()
-    pass
-elif selected == "人脸美化":
+elif selected == "人脸美化" or action == "beauty":
     test_beauty()
+elif selected == "装容美化" or action == "makeup":
+    test_makeup()
 else:
     st.text("正在赶工中...")
 
